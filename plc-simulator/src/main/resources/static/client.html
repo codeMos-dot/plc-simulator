@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>通用 PLC/DB 读写客户端</title>
+    <link rel="stylesheet" href="https://unpkg.com/element-plus/dist/index.css" />
+    <style>
+        body { padding: 20px; font-family: "Helvetica Neue", Helvetica, "PingFang SC", "Microsoft YaHei", sans-serif; background-color: #f5f7fa; }
+        .top-bar { background: #fff; padding: 15px 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 12px 0 rgba(0,0,0,0.05); display: flex; align-items: center; justify-content: space-between; }
+        .card-header { font-weight: bold; font-size: 16px; display: flex; justify-content: space-between; align-items: center; }
+        .hex-display { font-family: monospace; font-size: 14px; background-color: #fafafa; }
+    </style>
+</head>
+<body>
+<div id="app">
+    <div class="top-bar">
+        <div style="font-size: 18px; font-weight: bold; color: #303133;">
+            <el-button type="info" plain size="small" @click="goToIndex" style="margin-right: 15px;">&lt; 返回主面板</el-button>
+            通用 PLC/DB 原始数据读写工具
+        </div>
+        <div>
+            <span style="color: #909399; font-size: 14px;">（直接访问任何标准 S7 PLC 或本地 127.0.0.1）</span>
+        </div>
+    </div>
+
+    <el-row :gutter="20">
+        <!-- 左侧参数设置 -->
+        <el-col :span="8">
+            <el-card shadow="hover" style="margin-bottom: 20px;">
+                <template #header>
+                    <div class="card-header">1. PLC 连接参数</div>
+                </template>
+                <el-form label-width="100px" size="default">
+                    <el-form-item label="IP 地址">
+                        <el-input v-model="formData.ip" placeholder="127.0.0.1" :disabled="isPlcConnected"></el-input>
+                    </el-form-item>
+                    <el-row>
+                        <el-col :span="12">
+                            <el-form-item label="Rack (机架)">
+                                <el-input-number v-model="formData.rack" :min="0" :max="15" :disabled="isPlcConnected"></el-input-number>
+                            </el-form-item>
+                        </el-col>
+                        <el-col :span="12">
+                            <el-form-item label="Slot (插槽)">
+                                <el-input-number v-model="formData.slot" :min="0" :max="15" :disabled="isPlcConnected"></el-input-number>
+                            </el-form-item>
+                        </el-col>
+                    </el-row>
+                    <el-form-item>
+                        <el-button v-if="!isPlcConnected" type="success" :loading="loading" @click="connectPlc">连接 PLC</el-button>
+                        <el-button v-else type="danger" :loading="loading" @click="disconnectPlc">断开连接</el-button>
+                        <span v-if="isPlcConnected" style="margin-left: 10px; color: #67C23A; font-weight: bold;">已连接</span>
+                        <span v-else style="margin-left: 10px; color: #F56C6C; font-weight: bold;">未连接</span>
+                    </el-form-item>
+                </el-form>
+            </el-card>
+
+            <el-card shadow="hover">
+                <template #header>
+                    <div class="card-header">2. 读写目标块</div>
+                </template>
+                <el-form label-width="100px" size="default">
+                    <el-form-item label="DB 块编号">
+                        <el-input-number v-model="formData.dbNum" :min="1" :max="9999"></el-input-number>
+                    </el-form-item>
+                    <el-form-item label="Unit 编号">
+                        <el-input-number v-model="formData.unitIndex" :min="1" :max="300"></el-input-number>
+                        <div style="font-size: 12px; color:#909399; margin-top: 5px;">(自动计算 Offset: {{ 50 + (formData.unitIndex - 1) * 62 }})</div>
+                    </el-form-item>
+                </el-form>
+            </el-card>
+        </el-col>
+
+        <!-- 右侧表单显示与写入 -->
+        <el-col :span="16">
+            <el-card shadow="hover" style="height: 100%;">
+                <template #header>
+                    <div class="card-header">
+                        <span>3. 数据交互 (结构化模式 62 Bytes)</span>
+                        <div>
+                            <el-button type="primary" :loading="loading" @click="readData">向下读取 (PLC -> 页)</el-button>
+                            <el-button type="danger" :loading="loading" @click="writeData">提交写入 (页 -> PLC)</el-button>
+                        </div>
+                    </div>
+                </template>
+                <div style="margin-bottom: 20px; font-size: 13px; color: #606266;">
+                    下面表单对应从选定 Unit 编号（长 62 Byte）解析得到的属性。
+                </div>
+                
+                <el-form :model="structData" label-width="140px" size="small" :inline="true">
+                    <el-row :gutter="20">
+                        <el-col :span="12"><el-form-item label="设备号(Device_Nr)"><el-input v-model.number="structData.deviceNr"></el-input></el-form-item></el-col>
+                        <el-col :span="12"><el-form-item label="占位(Occupied)"><el-input v-model.number="structData.occupied"></el-input></el-form-item></el-col>
+                        <el-col :span="12"><el-form-item label="请求序号(PC_RSN)"><el-input v-model.number="structData.pcRsnAck"></el-input></el-form-item></el-col>
+                        <el-col :span="12"><el-form-item label="请求代码(PC_RC)"><el-input v-model.number="structData.pcRcAck"></el-input></el-form-item></el-col>
+                        <el-col :span="12"><el-form-item label="请求数量(PC_RQ)"><el-input v-model.number="structData.pcRqAck"></el-input></el-form-item></el-col>
+                        <el-col :span="12"><el-form-item label="状态(State)"><el-input v-model.number="structData.state"></el-input></el-form-item></el-col>
+                        <el-col :span="12"><el-form-item label="任务号(Task_ID)"><el-input v-model.number="structData.taskId"></el-input></el-form-item></el-col>
+                        <el-col :span="12"><el-form-item label="目的地(Dest_Nr)"><el-input v-model.number="structData.destNr"></el-input></el-form-item></el-col>
+                        <el-col :span="12"><el-form-item label="外检信息(Contour)"><el-input v-model.number="structData.contour"></el-input></el-form-item></el-col>
+                        <el-col :span="12"><el-form-item label="托盘重量(Weight)"><el-input v-model.number="structData.weight"></el-input></el-form-item></el-col>
+                        <el-col :span="12"><el-form-item label="尺寸(Size)"><el-input v-model.number="structData.size"></el-input></el-form-item></el-col>
+                        <el-col :span="12"><el-form-item label="托盘条码(Barcode)"><el-input v-model="structData.barcode" maxlength="30"></el-input></el-form-item></el-col>
+                        <el-col :span="12"><el-form-item label="类型(Type)"><el-input v-model.number="structData.type"></el-input></el-form-item></el-col>
+                        <el-col :span="12"><el-form-item label="写入标志(Comp)"><el-input v-model.number="structData.completionMark"></el-input></el-form-item></el-col>
+                        <el-col :span="12"><el-form-item label="流水(PC_Cmd_SN)"><el-input v-model.number="structData.pcCmdSn"></el-input></el-form-item></el-col>
+                        <el-col :span="12"><el-form-item label="拆盘目的(Cmd_C)"><el-input v-model.number="structData.pcCmdC"></el-input></el-form-item></el-col>
+                        <el-col :span="12"><el-form-item label="拆盘任务(Spare)"><el-input v-model.number="structData.spare"></el-input></el-form-item></el-col>
+                    </el-row>
+                </el-form>
+
+            </el-card>
+        </el-col>
+    </el-row>
+</div>
+
+<script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+<script src="https://unpkg.com/element-plus"></script>
+<script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+
+<script>
+    const { createApp, ref, onMounted, watch } = Vue
+    const { ElMessage, ElMessageBox } = ElementPlus
+
+    const app = createApp({
+        setup() {
+            const formData = ref({
+                ip: '127.0.0.1',
+                rack: 0,
+                slot: 0,
+                dbNum: 10,
+                unitIndex: 1
+            })
+            
+            const createEmptyDb = () => ({
+                deviceNr: null, occupied: null, pcRsnAck: null, pcRcAck: null, pcRqAck: null,
+                state: null, taskId: null, destNr: null, contour: null, weight: null, size: null,
+                barcode: '', type: null, completionMark: null, pcCmdSn: null, pcCmdC: null,
+                spare: null
+            })
+            
+            const structData = ref(createEmptyDb())
+            const loading = ref(false)
+            const isPlcConnected = ref(false)
+
+            watch(() => formData.value.unitIndex, (newVal) => {
+                structData.value.deviceNr = newVal;
+            });
+
+            const connectPlc = async () => {
+                loading.value = true;
+                try {
+                    const res = await axios.post('/api/client/connect', formData.value);
+                    if (res.data === 'SUCCESS') {
+                        isPlcConnected.value = true;
+                        ElMessage.success('连接成功');
+                    } else {
+                        ElMessage.error(res.data);
+                    }
+                } catch (error) {
+                    ElMessage.error('连接请求失败');
+                }
+                loading.value = false;
+            }
+
+            const disconnectPlc = async () => {
+                loading.value = true;
+                try {
+                    await axios.post('/api/client/disconnect');
+                    isPlcConnected.value = false;
+                    ElMessage.success('已断开连接');
+                } catch (error) {
+                    ElMessage.error('断开请求失败');
+                }
+                loading.value = false;
+            }
+
+            const readData = async () => {
+                if (!isPlcConnected.value) {
+                    return ElMessage.warning('未连接PLC');
+                }
+                loading.value = true;
+                const offset = 50 + (formData.value.unitIndex - 1) * 62;
+                const payload = { ...formData.value, offset: offset };
+                try {
+                    const res = await axios.post('/api/client/readUnit', payload);
+                    if (!res.data) {
+                         ElMessage.error("未读到数据或连接失败");
+                    } else {
+                         structData.value = res.data;
+                         ElMessage.success(`读取 DB${formData.value.dbNum} 偏移 ${offset} 成功！`);
+                    }
+                } catch (error) {
+                    ElMessage.error('网络请求失败');
+                }
+                loading.value = false;
+            }
+
+            const writeData = async () => {
+                if (!isPlcConnected.value) {
+                    return ElMessage.warning('未连接PLC');
+                }
+                const offset = 50 + (formData.value.unitIndex - 1) * 62;
+                await ElMessageBox.confirm(
+                    `确认要将表单内容写入真实 PLC 的 DB${formData.value.dbNum} 偏移 ${offset} 附近吗？`,
+                    '危险警告', { confirmButtonText: '确定写入', cancelButtonText: '取消', type: 'warning'}
+                ).then(async () => {
+                     loading.value = true;
+                     try {
+                        const payload = { ...formData.value, offset: offset, struct: structData.value };
+                        const res = await axios.post('/api/client/writeUnit', payload);
+                        if (res.data === 'SUCCESS') {
+                             ElMessage.success('写入 PLC 成功！');
+                        } else {
+                             ElMessage.error(res.data);
+                        }
+                     } catch (error) {
+                        ElMessage.error('网络请求失败');
+                     }
+                     loading.value = false;
+                }).catch(() => {});
+            }
+
+            const goToIndex = () => {
+                window.location.href = '/index.html';
+            }
+
+            return { formData, structData, readData, writeData, loading, goToIndex, isPlcConnected, connectPlc, disconnectPlc }
+        }
+    })
+    app.use(ElementPlus)
+    app.mount('#app')
+</script>
+</body>
+</html>
+

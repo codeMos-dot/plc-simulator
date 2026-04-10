@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>PLC 模拟器 (双DB对比)</title>
+    <link rel="stylesheet" href="https://unpkg.com/element-plus/dist/index.css" />
+    <style>
+        body { padding: 20px; font-family: "Helvetica Neue", Helvetica, "PingFang SC", "Microsoft YaHei", sans-serif; background-color: #eef2f5; }
+        .top-bar { background: #fff; padding: 15px 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 12px 0 rgba(0,0,0,0.05); display: flex; align-items: center; justify-content: space-between; }
+        .card-header { font-weight: bold; font-size: 16px; text-align: center; }
+        .header-db10 { color: #409EFF; }
+        .header-db11 { color: #67C23A; }
+    </style>
+</head>
+<body>
+<div id="app">
+    <div class="top-bar">
+        <div style="font-size: 18px; font-weight: bold; color: #303133;">
+            托盘线 PLC 通讯模拟器 (S7 102端口已启动)
+        </div>
+        <div>
+            <span style="margin-right: 10px; color: #606266;">当前设备号 (UnitIndex) Offset=50+(N-1)*62:</span>
+            <el-input-number v-model="unitIndex" :min="1" :max="300" style="width: 130px; margin-right: 15px;"></el-input-number>
+            <el-button type="primary" @click="loadData" :loading="loading">读取内存数据</el-button>
+            <el-button type="success" @click="saveData" :loading="loading">保存修改至内存</el-button>
+            <el-button type="warning" plain @click="goToClient" style="margin-left: 15px;">通用调试工具 &gt;</el-button>
+        </div>
+    </div>
+
+    <el-row :gutter="20">
+        <el-col :span="12">
+            <el-card shadow="hover">
+                <template #header>
+                    <div class="card-header header-db10">
+                        DB 10 (PLC 数据流向 -> PC)
+                        <span style="font-size: 12px; font-weight: normal; color: #909399;">(你的业务系统从此块读取)</span>
+                    </div>
+                </template>
+                <el-form :model="formData.db10" label-width="140px" size="small">
+                    <el-form-item label="设备号(Device_Nr)"><el-input v-model.number="formData.db10.deviceNr"></el-input></el-form-item>
+                    <el-form-item label="占位标志(Occupied)"><el-input v-model.number="formData.db10.occupied"></el-input></el-form-item>
+                    <el-form-item label="请求序号(PC_RSN)"><el-input v-model.number="formData.db10.pcRsnAck"></el-input></el-form-item>
+                    <el-form-item label="请求代码(PC_RC)"><el-input v-model.number="formData.db10.pcRcAck"></el-input></el-form-item>
+                    <el-form-item label="请求数量(PC_RQ)"><el-input v-model.number="formData.db10.pcRqAck"></el-input></el-form-item>
+                    <el-form-item label="状态(State)"><el-input v-model.number="formData.db10.state"></el-input></el-form-item>
+                    <el-form-item label="任务号(Task_ID)"><el-input v-model.number="formData.db10.taskId"></el-input></el-form-item>
+                    <el-form-item label="目的地(Dest_Nr)"><el-input v-model.number="formData.db10.destNr"></el-input></el-form-item>
+                    <el-form-item label="外检信息(Contour)"><el-input v-model.number="formData.db10.contour"></el-input></el-form-item>
+                    <el-form-item label="托盘重量(Weight)"><el-input v-model.number="formData.db10.weight"></el-input></el-form-item>
+                    <el-form-item label="尺寸(Size)"><el-input v-model.number="formData.db10.size"></el-input></el-form-item>
+                    <el-form-item label="托盘条码(Barcode)"><el-input v-model="formData.db10.barcode" maxlength="30"></el-input></el-form-item>
+                    <el-form-item label="类型(Type)"><el-input v-model.number="formData.db10.type"></el-input></el-form-item>
+                    <el-form-item label="写入标志(Comp_Mark)"><el-input v-model.number="formData.db10.completionMark"></el-input></el-form-item>
+                    <el-form-item label="指令流水(PC_Cmd_SN)"><el-input v-model.number="formData.db10.pcCmdSn"></el-input></el-form-item>
+                    <el-form-item label="拆盘目的(PC_Cmd_C)"><el-input v-model.number="formData.db10.pcCmdC"></el-input></el-form-item>
+                    <el-form-item label="拆盘任务(Spare)"><el-input v-model.number="formData.db10.spare"></el-input></el-form-item>
+                </el-form>
+            </el-card>
+        </el-col>
+
+        <el-col :span="12">
+            <el-card shadow="hover">
+                <template #header>
+                    <div class="card-header header-db11">
+                        DB 11 (PC 数据流向 -> PLC)
+                        <span style="font-size: 12px; font-weight: normal; color: #909399;">(你的业务系统写入此块)</span>
+                    </div>
+                </template>
+                <el-form :model="formData.db11" label-width="140px" size="small">
+                    <el-form-item label="设备号(Device_Nr)"><el-input v-model.number="formData.db11.deviceNr"></el-input></el-form-item>
+                    <el-form-item label="占位/备用(Occupied)"><el-input v-model.number="formData.db11.occupied"></el-input></el-form-item>
+                    <el-form-item label="序号反馈(RSN_Ack)"><el-input v-model.number="formData.db11.pcRsnAck"></el-input></el-form-item>
+                    <el-form-item label="编码反馈(RC_Ack)"><el-input v-model.number="formData.db11.pcRcAck"></el-input></el-form-item>
+                    <el-form-item label="数量反馈(RQ_Ack)"><el-input v-model.number="formData.db11.pcRqAck"></el-input></el-form-item>
+                    <el-form-item label="状态(State)"><el-input v-model.number="formData.db11.state"></el-input></el-form-item>
+                    <el-form-item label="任务号(Task_ID)"><el-input v-model.number="formData.db11.taskId"></el-input></el-form-item>
+                    <el-form-item label="目的地(Dest_Nr)"><el-input v-model.number="formData.db11.destNr"></el-input></el-form-item>
+                    <el-form-item label="外检信息(Contour)"><el-input v-model.number="formData.db11.contour"></el-input></el-form-item>
+                    <el-form-item label="托盘重量(Weight)"><el-input v-model.number="formData.db11.weight"></el-input></el-form-item>
+                    <el-form-item label="尺寸(Size)"><el-input v-model.number="formData.db11.size"></el-input></el-form-item>
+                    <el-form-item label="托盘条码(Barcode)"><el-input v-model="formData.db11.barcode" maxlength="30"></el-input></el-form-item>
+                    <el-form-item label="类型(Type)"><el-input v-model.number="formData.db11.type"></el-input></el-form-item>
+                    <el-form-item label="写入标志(Comp_Mark)"><el-input v-model.number="formData.db11.completionMark"></el-input></el-form-item>
+                    <el-form-item label="PC指令流水(PC_Cmd_SN)"><el-input v-model.number="formData.db11.pcCmdSn"></el-input></el-form-item>
+                    <el-form-item label="PC拆盘目的(PC_Cmd_C)"><el-input v-model.number="formData.db11.pcCmdC"></el-input></el-form-item>
+                    <el-form-item label="PC拆盘任务(Spare)"><el-input v-model.number="formData.db11.spare"></el-input></el-form-item>
+                </el-form>
+            </el-card>
+        </el-col>
+    </el-row>
+</div>
+
+<script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+<script src="https://unpkg.com/element-plus"></script>
+<script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+
+<script>
+    // 1. 这里新增了 watch 的引入
+    const { createApp, ref, onMounted, watch } = Vue
+    const { ElMessage } = ElementPlus
+
+    const app = createApp({
+        setup() {
+            const unitIndex = ref(1)
+            const loading = ref(false)
+
+            // 初始化空结构
+            const createEmptyDb = () => ({
+                deviceNr: 0, occupied: 0, pcRsnAck: 0, pcRcAck: 0, pcRqAck: 0,
+                state: 0, taskId: 0, destNr: 0, contour: 0, weight: 0, size: 0,
+                barcode: '', type: 0, completionMark: 0, pcCmdSn: 0, pcCmdC: 0,
+                spare: 0
+            })
+
+            const formData = ref({
+                unitIndex: 1,
+                db10: createEmptyDb(),
+                db11: createEmptyDb()
+            })
+
+            // 2. ================= 新增的联动监听逻辑 =================
+            // 当顶部的 unitIndex 发生改变时，自动把值赋给 db10 和 db11 的 deviceNr
+            watch(unitIndex, (newVal) => {
+                if (formData.value.db10) {
+                    formData.value.db10.deviceNr = newVal;
+                }
+                if (formData.value.db11) {
+                    formData.value.db11.deviceNr = newVal;
+                }
+            })
+            // =======================================================
+
+            const loadData = async () => {
+                loading.value = true;
+                try {
+                    const res = await axios.get(`/api/plc/unit/${unitIndex.value}`);
+                    formData.value = res.data;
+                    ElMessage.success(`读取设备 [${unitIndex.value}] DB10/DB11 数据成功`);
+                } catch (error) {
+                    ElMessage.error('读取内存失败');
+                }
+                loading.value = false;
+            }
+
+            const saveData = async () => {
+                loading.value = true;
+                try {
+                    formData.value.unitIndex = unitIndex.value;
+                    await axios.post('/api/plc/unit', formData.value);
+                    ElMessage.success('已同步写入到 S7Server 内存！');
+                } catch (error) {
+                    ElMessage.error('写入内存失败');
+                }
+                loading.value = false;
+            }
+
+            // 初始化加载一次
+            onMounted(() => {
+                loadData()
+            })
+
+            const goToClient = () => {
+                window.location.href = '/client.html';
+            }
+
+            return { unitIndex, formData, loadData, saveData, loading, goToClient }
+        }
+    })
+    app.use(ElementPlus)
+    app.mount('#app')
+</script>
+</body>
+</html>
