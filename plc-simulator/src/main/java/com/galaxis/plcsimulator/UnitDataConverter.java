@@ -12,6 +12,14 @@ public class UnitDataConverter {
     public static void setInt16(ByteBuffer db, int offset, int value) {
         db.putShort(offset, (short) value);
     }
+    
+    public static int getInt32(ByteBuffer db, int offset) {
+        return db.getInt(offset);
+    }
+
+    public static void setInt32(ByteBuffer db, int offset, int value) {
+        db.putInt(offset, value);
+    }
 
     public static String getString(ByteBuffer db, int offset, int length) {
         byte[] bytes = new byte[length];
@@ -37,46 +45,46 @@ public class UnitDataConverter {
         UnitData data = new UnitData();
         data.setDeviceNr(getInt16(db, 0));
         data.setOccupied(getInt16(db, 2));
-        data.setPcRsnAck(getInt16(db, 4));
-        data.setPcRcAck(getInt16(db, 6));
-        data.setPcRqAck(getInt16(db, 8));
-        data.setState(getInt16(db, 10));
+        data.setRsn(getInt16(db, 4));
+        data.setRc(getInt16(db, 6));
+        data.setRq(getInt16(db, 8));
+        data.setSpare1(getInt16(db, 10));
         data.setTaskId(getInt16(db, 12));
         data.setDestNr(getInt16(db, 14));
-        data.setContour(getInt16(db, 16));
-        data.setWeight(getInt16(db, 18));
-        data.setSize(getInt16(db, 20));
-        data.setBarcode(getString(db, 22, 30));
-        data.setType(getInt16(db, 52));
-        data.setCompletionMark(getInt16(db, 54));
-        data.setPcCmdSn(getInt16(db, 56));
-        data.setPcCmdC(getInt16(db, 58));
-        data.setSpare(getInt16(db, 60));
+        data.setCountour(getInt16(db, 16));
+        data.setWeight(getInt32(db, 18));
+        data.setBarcode(getString(db, 22, 16));
+        data.setBarcodeSpare(getString(db, 38, 16));
+        data.setType(getInt16(db, 90));
+        data.setCompletionMark(getInt16(db, 92));
+        data.setPcCmdSnAck(getInt16(db, 94));
+        data.setPcCmdCrlAck(getInt16(db, 96));
+        data.setDataValid(getInt16(db, 98));
         return data;
     }
 
     public static byte[] toByteArray(UnitData data) {
-        byte[] buffer = new byte[62];
+        byte[] buffer = new byte[100];
         if (data == null) return buffer;
         ByteBuffer db = ByteBuffer.wrap(buffer);
 
         setInt16(db, 0, data.getDeviceNr());
         setInt16(db, 2, data.getOccupied());
-        setInt16(db, 4, data.getPcRsnAck());
-        setInt16(db, 6, data.getPcRcAck());
-        setInt16(db, 8, data.getPcRqAck());
-        setInt16(db, 10, data.getState());
+        setInt16(db, 4, data.getRsn());
+        setInt16(db, 6, data.getRc());
+        setInt16(db, 8, data.getRq());
+        setInt16(db, 10, data.getSpare1());
         setInt16(db, 12, data.getTaskId());
         setInt16(db, 14, data.getDestNr());
-        setInt16(db, 16, data.getContour());
-        setInt16(db, 18, data.getWeight());
-        setInt16(db, 20, data.getSize());
-        setString(db, 22, data.getBarcode(), 30);
-        setInt16(db, 52, data.getType());
-        setInt16(db, 54, data.getCompletionMark());
-        setInt16(db, 56, data.getPcCmdSn());
-        setInt16(db, 58, data.getPcCmdC());
-        setInt16(db, 60, data.getSpare());
+        setInt16(db, 16, data.getCountour());
+        setInt32(db, 18, data.getWeight());
+        setString(db, 22, data.getBarcode(), 16);
+        setString(db, 38, data.getBarcodeSpare(), 16);
+        setInt16(db, 90, data.getType());
+        setInt16(db, 92, data.getCompletionMark());
+        setInt16(db, 94, data.getPcCmdSnAck());
+        setInt16(db, 96, data.getPcCmdCrlAck());
+        setInt16(db, 98, data.getDataValid());
 
         return buffer;
     }

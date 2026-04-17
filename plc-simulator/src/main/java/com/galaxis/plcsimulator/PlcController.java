@@ -15,12 +15,12 @@ public class PlcController {
 
     @GetMapping("/unit/{index}")
     public UnitDataPair getUnitData(@PathVariable int index) {
-        if (index < 1 || 50 + (index - 1) * 62 + 62 > 65000) {
+        if (index < 1 || 100 + (index - 1) * 100 + 100 > 65000) {
             throw new IllegalArgumentException("Index out of bounds");
         }
         
-        int offset = 50 + (index - 1) * 62; // 绝对起始地址
-        int size = 62;
+        int offset = 100 + (index - 1) * 100; // 绝对起始地址
+        int size = 100;
 
         UnitDataPair pair = new UnitDataPair();
         pair.setUnitIndex(index);
@@ -47,16 +47,16 @@ public class PlcController {
         }
         
         int index = pair.getUnitIndex();
-        if (index < 1 || 50 + (index - 1) * 62 + 62 > 65000) {
+        if (index < 1 || 100 + (index - 1) * 100 + 100 > 65000) {
             return "Error: Index out of bounds";
         }
         
-        int offset = 50 + (index - 1) * 62;
-        int size = 62;
+        int offset = 100 + (index - 1) * 100;
+        int size = 100;
 
         // 直接写入到底层 Direct Buffers
         if (pair.getDb10() != null) {
-            byte[] buf10 = UnitDataConverter.toByteArray(pair.getDb10()); // 先转成 62 字节数组
+            byte[] buf10 = UnitDataConverter.toByteArray(pair.getDb10()); // 先转成 100 字节数组
             for (int i = 0; i < size; i++) {
                 plcServerService.db10.put(offset + i, buf10[i]);
             }
@@ -64,7 +64,7 @@ public class PlcController {
         
         // 写 DB11
         if (pair.getDb11() != null) {
-            byte[] buf11 = UnitDataConverter.toByteArray(pair.getDb11()); // 先转成 62 字节数组
+            byte[] buf11 = UnitDataConverter.toByteArray(pair.getDb11()); // 先转成 100 字节数组
             for (int i = 0; i < size; i++) {
                 plcServerService.db11.put(offset + i, buf11[i]);
             }

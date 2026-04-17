@@ -3,21 +3,21 @@ package com.galaxis.plcsimulator;
 public class UnitData {
     private int deviceNr;
     private int occupied;
-    private int pcRsnAck;
-    private int pcRcAck;
-    private int pcRqAck;
-    private int state;
+    private int rsn;
+    private int rc;
+    private int rq;
+    private int spare1;
     private int taskId;
     private int destNr;
-    private int contour;
-    private int weight;
-    private int size;
-    private String barcode;
+    private int countour;
+    private int weight; // DINT (4 Bytes)
+    private String barcode; // 16 Bytes
+    private String barcodeSpare; // 16 Bytes
     private int type;
     private int completionMark;
-    private int pcCmdSn;
-    private int pcCmdC;
-    private int spare;
+    private int pcCmdSnAck;
+    private int pcCmdCrlAck;
+    private int dataValid;
 
     // ================= Getter & Setter =================
 
@@ -27,17 +27,17 @@ public class UnitData {
     public int getOccupied() { return occupied; }
     public void setOccupied(int occupied) { this.occupied = occupied; }
 
-    public int getPcRsnAck() { return pcRsnAck; }
-    public void setPcRsnAck(int pcRsnAck) { this.pcRsnAck = pcRsnAck; }
+    public int getRsn() { return rsn; }
+    public void setRsn(int rsn) { this.rsn = rsn; }
 
-    public int getPcRcAck() { return pcRcAck; }
-    public void setPcRcAck(int pcRcAck) { this.pcRcAck = pcRcAck; }
+    public int getRc() { return rc; }
+    public void setRc(int rc) { this.rc = rc; }
 
-    public int getPcRqAck() { return pcRqAck; }
-    public void setPcRqAck(int pcRqAck) { this.pcRqAck = pcRqAck; }
+    public int getRq() { return rq; }
+    public void setRq(int rq) { this.rq = rq; }
 
-    public int getState() { return state; }
-    public void setState(int state) { this.state = state; }
+    public int getSpare1() { return spare1; }
+    public void setSpare1(int spare1) { this.spare1 = spare1; }
 
     public int getTaskId() { return taskId; }
     public void setTaskId(int taskId) { this.taskId = taskId; }
@@ -45,17 +45,17 @@ public class UnitData {
     public int getDestNr() { return destNr; }
     public void setDestNr(int destNr) { this.destNr = destNr; }
 
-    public int getContour() { return contour; }
-    public void setContour(int contour) { this.contour = contour; }
+    public int getCountour() { return countour; }
+    public void setCountour(int countour) { this.countour = countour; }
 
     public int getWeight() { return weight; }
     public void setWeight(int weight) { this.weight = weight; }
 
-    public int getSize() { return size; }
-    public void setSize(int size) { this.size = size; }
-
     public String getBarcode() { return barcode; }
     public void setBarcode(String barcode) { this.barcode = barcode; }
+
+    public String getBarcodeSpare() { return barcodeSpare; }
+    public void setBarcodeSpare(String barcodeSpare) { this.barcodeSpare = barcodeSpare; }
 
     public int getType() { return type; }
     public void setType(int type) { this.type = type; }
@@ -63,12 +63,12 @@ public class UnitData {
     public int getCompletionMark() { return completionMark; }
     public void setCompletionMark(int completionMark) { this.completionMark = completionMark; }
 
-    public int getPcCmdSn() { return pcCmdSn; }
-    public void setPcCmdSn(int pcCmdSn) { this.pcCmdSn = pcCmdSn; }
+    public int getPcCmdSnAck() { return pcCmdSnAck; }
+    public void setPcCmdSnAck(int pcCmdSnAck) { this.pcCmdSnAck = pcCmdSnAck; }
 
-    public int getPcCmdC() { return pcCmdC; }
-    public void setPcCmdC(int pcCmdC) { this.pcCmdC = pcCmdC; }
+    public int getPcCmdCrlAck() { return pcCmdCrlAck; }
+    public void setPcCmdCrlAck(int pcCmdCrlAck) { this.pcCmdCrlAck = pcCmdCrlAck; }
 
-    public int getSpare() { return spare; }
-    public void setSpare(int spare) { this.spare = spare; }
+    public int getDataValid() { return dataValid; }
+    public void setDataValid(int dataValid) { this.dataValid = dataValid; }
 }

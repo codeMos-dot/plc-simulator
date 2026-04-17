@@ -119,8 +119,8 @@ public class PlcClientController {
         int dbNum = Integer.parseInt(req.getOrDefault("dbNum", "10").toString());
         int offset = Integer.parseInt(req.getOrDefault("offset", "0").toString());
         
-        byte[] buffer = new byte[62];
-        int readRes = s7Client.ReadArea(com.galaxis.wes.trayline.common.moka7.S7.S7AreaDB, dbNum, offset, 62, buffer);
+        byte[] buffer = new byte[100];
+        int readRes = s7Client.ReadArea(com.galaxis.wes.trayline.common.moka7.S7.S7AreaDB, dbNum, offset, 100, buffer);
         if (readRes != 0) {
             return null;
         }
@@ -138,8 +138,8 @@ public class PlcClientController {
         if (struct == null) return "ERROR: No struct provided";
 
         // 第一步：先读取 PLC 现有的完整块数据 (Read)
-        byte[] currentBuffer = new byte[62];
-        int readRes = s7Client.ReadArea(com.galaxis.wes.trayline.common.moka7.S7.S7AreaDB, dbNum, offset, 62, currentBuffer);
+        byte[] currentBuffer = new byte[100];
+        int readRes = s7Client.ReadArea(com.galaxis.wes.trayline.common.moka7.S7.S7AreaDB, dbNum, offset, 100, currentBuffer);
         if (readRes != 0) {
             return "ERROR: Pre-read Failed (" + readRes + ")";
         }
@@ -149,21 +149,21 @@ public class PlcClientController {
         // 第二步：根据前端提交的值，进行覆盖 (Modify) 只有在值不是 null 或 空时覆盖
         if (hasValue(struct, "deviceNr")) data.setDeviceNr(Integer.parseInt(struct.get("deviceNr").toString()));
         if (hasValue(struct, "occupied")) data.setOccupied(Integer.parseInt(struct.get("occupied").toString()));
-        if (hasValue(struct, "pcRsnAck")) data.setPcRsnAck(Integer.parseInt(struct.get("pcRsnAck").toString()));
-        if (hasValue(struct, "pcRcAck")) data.setPcRcAck(Integer.parseInt(struct.get("pcRcAck").toString()));
-        if (hasValue(struct, "pcRqAck")) data.setPcRqAck(Integer.parseInt(struct.get("pcRqAck").toString()));
-        if (hasValue(struct, "state")) data.setState(Integer.parseInt(struct.get("state").toString()));
+        if (hasValue(struct, "rsn")) data.setRsn(Integer.parseInt(struct.get("rsn").toString()));
+        if (hasValue(struct, "rc")) data.setRc(Integer.parseInt(struct.get("rc").toString()));
+        if (hasValue(struct, "rq")) data.setRq(Integer.parseInt(struct.get("rq").toString()));
+        if (hasValue(struct, "spare1")) data.setSpare1(Integer.parseInt(struct.get("spare1").toString()));
         if (hasValue(struct, "taskId")) data.setTaskId(Integer.parseInt(struct.get("taskId").toString()));
         if (hasValue(struct, "destNr")) data.setDestNr(Integer.parseInt(struct.get("destNr").toString()));
-        if (hasValue(struct, "contour")) data.setContour(Integer.parseInt(struct.get("contour").toString()));
+        if (hasValue(struct, "countour")) data.setCountour(Integer.parseInt(struct.get("countour").toString()));
         if (hasValue(struct, "weight")) data.setWeight(Integer.parseInt(struct.get("weight").toString()));
-        if (hasValue(struct, "size")) data.setSize(Integer.parseInt(struct.get("size").toString()));
         if (hasValue(struct, "barcode")) data.setBarcode(struct.get("barcode").toString());
+        if (hasValue(struct, "barcodeSpare")) data.setBarcodeSpare(struct.get("barcodeSpare").toString());
         if (hasValue(struct, "type")) data.setType(Integer.parseInt(struct.get("type").toString()));
         if (hasValue(struct, "completionMark")) data.setCompletionMark(Integer.parseInt(struct.get("completionMark").toString()));
-        if (hasValue(struct, "pcCmdSn")) data.setPcCmdSn(Integer.parseInt(struct.get("pcCmdSn").toString()));
-        if (hasValue(struct, "pcCmdC")) data.setPcCmdC(Integer.parseInt(struct.get("pcCmdC").toString()));
-        if (hasValue(struct, "spare")) data.setSpare(Integer.parseInt(struct.get("spare").toString()));
+        if (hasValue(struct, "pcCmdSnAck")) data.setPcCmdSnAck(Integer.parseInt(struct.get("pcCmdSnAck").toString()));
+        if (hasValue(struct, "pcCmdCrlAck")) data.setPcCmdCrlAck(Integer.parseInt(struct.get("pcCmdCrlAck").toString()));
+        if (hasValue(struct, "dataValid")) data.setDataValid(Integer.parseInt(struct.get("dataValid").toString()));
 
         // 第三步：转成最终字节数组，写回 PLC (Write)
         byte[] writeBuffer = UnitDataConverter.toByteArray(data);
