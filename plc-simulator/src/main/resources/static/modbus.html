@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modbus TCP Simulator</title>
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --primary-hover: #1d4ed8;
+            --success-color: #10b981;
+            --danger-color: #ef4444;
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --border-color: #e2e8f0;
+            --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        }
+
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            line-height: 1.6;
+        }
+
+        .navbar {
+            background-color: var(--card-bg);
+            padding: 1rem 2rem;
+            box-shadow: var(--shadow);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .navbar h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: var(--text-main);
+            margin-left: 1.5rem;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+
+        .nav-links a:hover {
+            color: var(--primary-color);
+        }
+
+        .nav-links a.active {
+            color: var(--primary-color);
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 0.25rem;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 1rem;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+        }
+
+        .panel {
+            background: var(--card-bg);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border-color);
+        }
+
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .panel-header h2 {
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+        .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .status-online {
+            background-color: #d1fae5;
+            color: #065f46;
+        }
+
+        .status-offline {
+            background-color: #fee2e2;
+            color: #991b1b;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+            color: var(--text-muted);
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 0.5rem 0.75rem;
+            border: 1px solid var(--border-color);
+            border-radius: 0.375rem;
+            font-family: inherit;
+            font-size: 1rem;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            text-align: center;
+            border-radius: 0.375rem;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.1s;
+            font-family: inherit;
+        }
+
+        .btn:active {
+            transform: scale(0.98);
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--primary-hover);
+        }
+
+        .btn-success {
+            background-color: var(--success-color);
+            color: white;
+        }
+
+        .btn-success:hover {
+            background-color: #059669;
+        }
+
+        .btn-danger {
+            background-color: var(--danger-color);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background-color: #dc2626;
+        }
+
+        .controls-row {
+            display: flex;
+            gap: 1rem;
+            align-items: flex-end;
+            margin-bottom: 1.5rem;
+        }
+
+        .data-table-container {
+            margin-top: 1.5rem;
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid var(--border-color);
+            border-radius: 0.375rem;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        th, td {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        th {
+            background-color: #f1f5f9;
+            font-weight: 600;
+            color: var(--text-muted);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        tbody tr:hover {
+            background-color: #f8fafc;
+        }
+
+        .register-input {
+            width: 80px;
+            padding: 0.25rem 0.5rem;
+            border: 1px solid var(--border-color);
+            border-radius: 0.25rem;
+        }
+
+        .notification {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            padding: 1rem 1.5rem;
+            border-radius: 0.5rem;
+            background: white;
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+            transform: translateY(150%);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 50;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            border-left: 4px solid var(--primary-color);
+        }
+
+        .notification.show {
+            transform: translateY(0);
+        }
+
+        .notification.error {
+            border-left-color: var(--danger-color);
+        }
+
+        .notification.success {
+            border-left-color: var(--success-color);
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar">
+        <h1>PLC Simulator</h1>
+        <div class="nav-links">
+            <a href="index.html">Server Mode</a>
+            <a href="client.html">Client Mode</a>
+            <a href="modbus.html" class="active">Modbus TCP</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <!-- Server Panel -->
+        <div class="panel">
+            <div class="panel-header">
+                <h2>Modbus Server (Slave)</h2>
+                <span id="serverStatusBadge" class="status-badge status-offline">Offline</span>
+            </div>
+            
+            <div class="controls-row">
+                <div class="form-group" style="flex: 1;">
+                    <label for="serverPort">Listening Port</label>
+                    <input type="number" id="serverPort" value="5020" min="1" max="65535">
+                </div>
+                <div class="form-group">
+                    <button id="btnStartServer" class="btn btn-success" onclick="toggleServer()">Start Server</button>
+                </div>
+            </div>
+
+            <div class="form-group" style="display: flex; justify-content: space-between; align-items: center;">
+                <label style="margin:0;">Holding Registers (0 - 99)</label>
+                <button class="btn btn-primary" style="padding: 0.25rem 0.75rem; font-size: 0.75rem;" onclick="refreshServerRegisters()">Refresh</button>
+            </div>
+
+            <div class="data-table-container">
+                <table id="serverTable">
+                    <thead>
+                        <tr>
+                            <th width="30%">Address</th>
+                            <th width="40%">Value (Dec)</th>
+                            <th width="30%">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="serverTableBody">
+                        <!-- Rows generated by JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Client Panel -->
+        <div class="panel">
+            <div class="panel-header">
+                <h2>Modbus Client (Master)</h2>
+                <span id="clientStatusBadge" class="status-badge status-offline">Disconnected</span>
+            </div>
+            
+            <div class="controls-row">
+                <div class="form-group" style="flex: 2;">
+                    <label for="clientIp">Server IP</label>
+                    <input type="text" id="clientIp" value="127.0.0.1">
+                </div>
+                <div class="form-group" style="flex: 1;">
+                    <label for="clientPort">Port</label>
+                    <input type="number" id="clientPort" value="5020" min="1" max="65535">
+                </div>
+                <div class="form-group">
+                    <button id="btnConnectClient" class="btn btn-primary" onclick="toggleClient()">Connect</button>
+                </div>
+            </div>
+
+            <div class="controls-row" style="background: #f1f5f9; padding: 1rem; border-radius: 0.5rem;">
+                <div class="form-group" style="flex: 1; margin: 0;">
+                    <label for="clientOffset">Read Offset</label>
+                    <input type="number" id="clientOffset" value="0" min="0">
+                </div>
+                <div class="form-group" style="flex: 1; margin: 0;">
+                    <label for="clientCount">Count</label>
+                    <input type="number" id="clientCount" value="10" min="1" max="100">
+                </div>
+                <div class="form-group" style="margin: 0;">
+                    <button class="btn btn-success" onclick="readClientRegisters()">Read</button>
+                </div>
+            </div>
+
+            <div class="data-table-container" style="max-height: 290px;">
+                <table id="clientTable">
+                    <thead>
+                        <tr>
+                            <th width="30%">Address</th>
+                            <th width="40%">Value (Dec)</th>
+                            <th width="30%">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="clientTableBody">
+                        <!-- Rows generated by JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div id="notification" class="notification">
+        <span id="notificationMsg">Notification message</span>
+    </div>
+
+    <script>
+        let serverRunning = false;
+        let clientConnected = false;
+        let serverRegisters = Array(100).fill(0);
+        let clientRegisters = [];
+        let clientReadOffset = 0;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            renderServerTable();
+            checkStatus();
+            setInterval(checkStatus, 5000); // Periodic check
+        });
+
+        function showNotification(msg, type = 'success') {
+            const el = document.getElementById('notification');
+            const msgEl = document.getElementById('notificationMsg');
+            el.className = `notification show ${type}`;
+            msgEl.textContent = msg;
+            setTimeout(() => {
+                el.className = 'notification';
+            }, 3000);
+        }
+
+        // --- Server Functions ---
+
+        async function checkStatus() {
+            try {
+                const sRes = await fetch('/api/modbus/server/status');
+                if (sRes.ok) {
+                    const sData = await sRes.json();
+                    updateServerUI(sData.running);
+                }
+
+                const cRes = await fetch('/api/modbus/client/status');
+                if (cRes.ok) {
+                    const cData = await cRes.json();
+                    updateClientUI(cData.connected);
+                }
+            } catch (e) {
+                console.error('Failed to fetch status', e);
+            }
+        }
+
+        function updateServerUI(isRunning) {
+            serverRunning = isRunning;
+            const btn = document.getElementById('btnStartServer');
+            const badge = document.getElementById('serverStatusBadge');
+            
+            if (isRunning) {
+                btn.textContent = 'Stop Server';
+                btn.className = 'btn btn-danger';
+                badge.textContent = 'Online';
+                badge.className = 'status-badge status-online';
+                document.getElementById('serverPort').disabled = true;
+            } else {
+                btn.textContent = 'Start Server';
+                btn.className = 'btn btn-success';
+                badge.textContent = 'Offline';
+                badge.className = 'status-badge status-offline';
+                document.getElementById('serverPort').disabled = false;
+            }
+        }
+
+        async function toggleServer() {
+            const port = document.getElementById('serverPort').value;
+            const endpoint = serverRunning ? '/api/modbus/server/stop' : `/api/modbus/server/start?port=${port}`;
+            
+            try {
+                const res = await fetch(endpoint, { method: 'POST' });
+                const data = await res.json();
+                if (res.ok) {
+                    showNotification(data.message, 'success');
+                    updateServerUI(!serverRunning);
+                    if (!serverRunning) { // If it just started
+                        refreshServerRegisters();
+                    }
+                } else {
+                    showNotification(data.message, 'error');
+                }
+            } catch (e) {
+                showNotification('Network error', 'error');
+            }
+        }
+
+        async function refreshServerRegisters() {
+            try {
+                const res = await fetch('/api/modbus/server/registers?offset=0&count=100');
+                if (res.ok) {
+                    serverRegisters = await res.json();
+                    renderServerTable();
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        async function updateServerRegister(offset) {
+            const input = document.getElementById(`srv-reg-${offset}`);
+            const val = parseInt(input.value) || 0;
+            
+            try {
+                const res = await fetch('/api/modbus/server/registers', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ offset: offset, values: [val] })
+                });
+                if (res.ok) {
+                    showNotification(`Register ${offset} updated`, 'success');
+                    serverRegisters[offset] = val;
+                } else {
+                    showNotification('Failed to update register', 'error');
+                }
+            } catch (e) {
+                showNotification('Network error', 'error');
+            }
+        }
+
+        function renderServerTable() {
+            const tbody = document.getElementById('serverTableBody');
+            tbody.innerHTML = '';
+            for (let i = 0; i < 100; i++) {
+                tbody.innerHTML += `
+                    <tr>
+                        <td>4${String(i + 1).padStart(4, '0')} (offset ${i})</td>
+                        <td>
+                            <input type="number" id="srv-reg-${i}" class="register-input" value="${serverRegisters[i]}">
+                        </td>
+                        <td>
+                            <button class="btn btn-primary" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;" onclick="updateServerRegister(${i})">Set</button>
+                        </td>
+                    </tr>
+                `;
+            }
+        }
+
+        // --- Client Functions ---
+
+        function updateClientUI(isConnected) {
+            clientConnected = isConnected;
+            const btn = document.getElementById('btnConnectClient');
+            const badge = document.getElementById('clientStatusBadge');
+            
+            if (isConnected) {
+                btn.textContent = 'Disconnect';
+                btn.className = 'btn btn-danger';
+                badge.textContent = 'Connected';
+                badge.className = 'status-badge status-online';
+                document.getElementById('clientIp').disabled = true;
+                document.getElementById('clientPort').disabled = true;
+            } else {
+                btn.textContent = 'Connect';
+                btn.className = 'btn btn-primary';
+                badge.textContent = 'Disconnected';
+                badge.className = 'status-badge status-offline';
+                document.getElementById('clientIp').disabled = false;
+                document.getElementById('clientPort').disabled = false;
+            }
+        }
+
+        async function toggleClient() {
+            const ip = document.getElementById('clientIp').value;
+            const port = document.getElementById('clientPort').value;
+            
+            let url, options;
+            if (clientConnected) {
+                url = '/api/modbus/client/disconnect';
+                options = { method: 'POST' };
+            } else {
+                url = `/api/modbus/client/connect?ip=${encodeURIComponent(ip)}&port=${port}`;
+                options = { method: 'POST' };
+            }
+            
+            try {
+                const res = await fetch(url, options);
+                const data = await res.json();
+                if (res.ok) {
+                    showNotification(data.message, 'success');
+                    updateClientUI(!clientConnected);
+                    if (clientConnected) {
+                        readClientRegisters();
+                    } else {
+                        document.getElementById('clientTableBody').innerHTML = '';
+                    }
+                } else {
+                    showNotification(data.message, 'error');
+                }
+            } catch (e) {
+                showNotification('Network error', 'error');
+            }
+        }
+
+        async function readClientRegisters() {
+            if (!clientConnected) {
+                showNotification('Client not connected', 'error');
+                return;
+            }
+            
+            const offset = parseInt(document.getElementById('clientOffset').value) || 0;
+            const count = parseInt(document.getElementById('clientCount').value) || 10;
+            clientReadOffset = offset;
+            
+            try {
+                const res = await fetch(`/api/modbus/client/read?offset=${offset}&count=${count}`);
+                if (res.ok) {
+                    clientRegisters = await res.json();
+                    renderClientTable(offset);
+                    showNotification('Data read successfully', 'success');
+                } else {
+                    const err = await res.json();
+                    showNotification(err.message, 'error');
+                }
+            } catch (e) {
+                showNotification('Network error', 'error');
+            }
+        }
+
+        async function writeClientRegister(index) {
+            if (!clientConnected) {
+                showNotification('Client not connected', 'error');
+                return;
+            }
+
+            const offset = clientReadOffset + index;
+            const input = document.getElementById(`cli-reg-${index}`);
+            const val = parseInt(input.value) || 0;
+            
+            try {
+                const res = await fetch('/api/modbus/client/write', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ offset: offset, values: [val] })
+                });
+                
+                if (res.ok) {
+                    showNotification(`Wrote ${val} to register ${offset}`, 'success');
+                    clientRegisters[index] = val;
+                } else {
+                    const err = await res.json();
+                    showNotification(err.message, 'error');
+                }
+            } catch (e) {
+                showNotification('Network error', 'error');
+            }
+        }
+
+        function renderClientTable(offset) {
+            const tbody = document.getElementById('clientTableBody');
+            tbody.innerHTML = '';
+            
+            if (clientRegisters.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="3" style="text-align: center; color: #64748b;">No data read yet</td></tr>';
+                return;
+            }
+
+            clientRegisters.forEach((val, i) => {
+                const absOffset = offset + i;
+                tbody.innerHTML += `
+                    <tr>
+                        <td>4${String(absOffset + 1).padStart(4, '0')} (offset ${absOffset})</td>
+                        <td>
+                            <input type="number" id="cli-reg-${i}" class="register-input" value="${val}">
+                        </td>
+                        <td>
+                            <button class="btn btn-primary" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;" onclick="writeClientRegister(${i})">Write</button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+    </script>
+</body>
+</html>

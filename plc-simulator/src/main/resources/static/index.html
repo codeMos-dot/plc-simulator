@@ -24,6 +24,7 @@
             <el-button type="primary" @click="loadData" :loading="loading">读取内存数据</el-button>
             <el-button type="success" @click="saveData" :loading="loading">保存修改至内存</el-button>
             <el-button type="warning" plain @click="goToClient" style="margin-left: 15px;">通用调试工具 &gt;</el-button>
+            <el-button type="info" plain onclick="window.location.href='/modbus.html'" style="margin-left: 15px;">Modbus TCP &gt;</el-button>
         </div>
     </div>
 
