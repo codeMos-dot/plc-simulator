@@ -49,7 +49,7 @@ public class Snap7Server {
         if(err != 0) {
             System.err.println("DB" + dbNumber + " 底层内存注册失败！错误码：" + err);
         } else {
-            System.out.println("DB" + dbNumber + " 底层内存 65536 字节注册成功！");
+            System.out.println("DB" + dbNumber + " 底层内存 " + buffer.capacity() + " 字节注册成功！");
         }
     }
 

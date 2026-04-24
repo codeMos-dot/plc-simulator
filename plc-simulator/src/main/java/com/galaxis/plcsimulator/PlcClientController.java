@@ -1,6 +1,7 @@
 package com.galaxis.plcsimulator;
 
 import org.springframework.web.bind.annotation.*;
+import javax.annotation.PreDestroy;
 import java.util.Map;
 
 @RestController
@@ -178,5 +179,13 @@ public class PlcClientController {
     private boolean hasValue(Map<String, Object> map, String key) {
         Object val = map.get(key);
         return val != null && !val.toString().trim().isEmpty();
+    }
+
+    @PreDestroy
+    public void cleanup() {
+        if (isConnected) {
+            s7Client.Disconnect();
+            isConnected = false;
+        }
     }
 }

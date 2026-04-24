@@ -15,8 +15,8 @@ public class PlcController {
 
     @GetMapping("/unit/{index}")
     public UnitDataPair getUnitData(@PathVariable int index) {
-        if (index < 1 || 50 + (index - 1) * 62 + 62 > 65000) {
-            throw new IllegalArgumentException("Index out of bounds");
+        if (index < 1 || index > 1047) {
+            throw new IllegalArgumentException("Index out of bounds: must be between 1 and 1047");
         }
         
         int offset = 50 + (index - 1) * 62; // 绝对起始地址
@@ -47,8 +47,8 @@ public class PlcController {
         }
         
         int index = pair.getUnitIndex();
-        if (index < 1 || 50 + (index - 1) * 62 + 62 > 65000) {
-            return "Error: Index out of bounds";
+        if (index < 1 || index > 1047) {
+            return "Error: Index out of bounds: must be between 1 and 1047";
         }
         
         int offset = 50 + (index - 1) * 62;

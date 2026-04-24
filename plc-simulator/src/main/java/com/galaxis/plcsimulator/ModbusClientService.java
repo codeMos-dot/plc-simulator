@@ -70,43 +70,47 @@ public class ModbusClientService {
     }
 
     public int[] readHoldingRegisters(int unitId, int offset, int count) {
-        if (!isConnected) {
-            throw new IllegalStateException("Client is not connected");
-        }
-
-        try {
-            Register[] registers = master.readMultipleRegisters(unitId, offset, count);
-            int[] data = new int[registers.length];
-            for (int i = 0; i < registers.length; i++) {
-                data[i] = registers[i].getValue();
+        synchronized (this) {
+            if (!isConnected) {
+                throw new IllegalStateException("Client is not connected");
             }
-            return data;
-        } catch (com.ghgande.j2mod.modbus.ModbusSlaveException e) {
-            log.error("Modbus slave exception: Type={}, Error Code={}", e.getMessage(), e.getType());
-            throw new RuntimeException("Modbus slave exception: " + e.getMessage() + " (Type " + e.getType() + ")", e);
-        } catch (Exception e) {
-            log.error("Failed to read holding registers: {}", e.getMessage(), e);
-            throw new RuntimeException("Failed to read registers: " + e.toString(), e);
+
+            try {
+                Register[] registers = master.readMultipleRegisters(unitId, offset, count);
+                int[] data = new int[registers.length];
+                for (int i = 0; i < registers.length; i++) {
+                    data[i] = registers[i].getValue();
+                }
+                return data;
+            } catch (com.ghgande.j2mod.modbus.ModbusSlaveException e) {
+                log.error("Modbus slave exception: Type={}, Error Code={}", e.getMessage(), e.getType());
+                throw new RuntimeException("Modbus slave exception: " + e.getMessage() + " (Type " + e.getType() + ")", e);
+            } catch (Exception e) {
+                log.error("Failed to read holding registers: {}", e.getMessage(), e);
+                throw new RuntimeException("Failed to read registers: " + e.toString(), e);
+            }
         }
     }
 
     public void writeMultipleRegisters(int unitId, int offset, int[] values) {
-        if (!isConnected) {
-            throw new IllegalStateException("Client is not connected");
-        }
-
-        try {
-            Register[] registers = new Register[values.length];
-            for (int i = 0; i < values.length; i++) {
-                registers[i] = new SimpleRegister(values[i]);
+        synchronized (this) {
+            if (!isConnected) {
+                throw new IllegalStateException("Client is not connected");
             }
-            master.writeMultipleRegisters(unitId, offset, registers);
-        } catch (com.ghgande.j2mod.modbus.ModbusSlaveException e) {
-            log.error("Modbus slave exception during write: Type={}, Error Code={}", e.getMessage(), e.getType());
-            throw new RuntimeException("Modbus slave exception: " + e.getMessage() + " (Type " + e.getType() + ")", e);
-        } catch (Exception e) {
-            log.error("Failed to write holding registers: {}", e.getMessage(), e);
-            throw new RuntimeException("Failed to write registers: " + e.toString(), e);
+
+            try {
+                Register[] registers = new Register[values.length];
+                for (int i = 0; i < values.length; i++) {
+                    registers[i] = new SimpleRegister(values[i]);
+                }
+                master.writeMultipleRegisters(unitId, offset, registers);
+            } catch (com.ghgande.j2mod.modbus.ModbusSlaveException e) {
+                log.error("Modbus slave exception during write: Type={}, Error Code={}", e.getMessage(), e.getType());
+                throw new RuntimeException("Modbus slave exception: " + e.getMessage() + " (Type " + e.getType() + ")", e);
+            } catch (Exception e) {
+                log.error("Failed to write holding registers: {}", e.getMessage(), e);
+                throw new RuntimeException("Failed to write registers: " + e.toString(), e);
+            }
         }
     }
 

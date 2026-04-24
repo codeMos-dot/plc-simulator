@@ -38,12 +38,14 @@ public class ModbusServerService {
     }
 
     public synchronized boolean startServer(int port) {
+        // 先等待初始化完成
+        ensureInitialized();
+        
         if (isRunning) {
             stopServer();
         }
 
         try {
-            ensureInitialized();
             this.currentPort = port;
             slave = ModbusSlaveFactory.createTCPSlave(port, 5);
             
@@ -52,8 +54,8 @@ public class ModbusServerService {
             
             slave.open();
             isRunning = true;
-            log.info("Modbus server started on port {} (Unit ID 1 mapped, Holding Registers: {}, Input Registers: {}, Coils: {}, Discrete Inputs: {})", 
-                     currentPort, processImage.getRegisterCount(), processImage.getInputRegisterCount(), 
+            log.info("Modbus server started on port {} (Unit ID 1 mapped, Holding Registers: {}, Input Registers: {}, Coils: {}, Discrete Inputs: {})",
+                     currentPort, processImage.getRegisterCount(), processImage.getInputRegisterCount(),
                      processImage.getDigitalOutCount(), processImage.getDigitalInCount());
             return true;
         } catch (Exception e) {
@@ -63,6 +65,7 @@ public class ModbusServerService {
     }
 
     public synchronized boolean stopServer() {
+        isRunning = false;
         if (slave != null) {
             try {
                 slave.close();
@@ -71,7 +74,6 @@ public class ModbusServerService {
             }
             slave = null;
         }
-        isRunning = false;
         log.info("Modbus server stopped.");
         return true;
     }
